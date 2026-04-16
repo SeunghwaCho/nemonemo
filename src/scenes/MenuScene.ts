@@ -249,7 +249,7 @@ export class MenuScene extends Scene {
       const scrollRatio = this.scrollY / this.maxScroll;
       const trackH = H - HEADER_H - 20;
       const thumbH = Math.max(30, trackH * ((H - HEADER_H) / (H - HEADER_H + this.maxScroll)));
-      const thumbY = headerH + 10 + scrollRatio * (trackH - thumbH);
+      const thumbY = HEADER_H + 10 + scrollRatio * (trackH - thumbH);
       ctx.fillStyle = 'rgba(255,255,255,0.2)';
       ctx.fillRect(W - 8, HEADER_H + 10, 4, trackH);
       ctx.fillStyle = 'rgba(255,255,255,0.5)';

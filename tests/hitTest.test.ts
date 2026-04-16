@@ -4,7 +4,8 @@
  */
 
 import { test, describe, expect } from './testRunner';
-import { CellState } from '../src/types';
+import { MenuScene } from '../src/scenes/MenuScene';
+import { CellState, LevelData, LevelProgress } from '../src/types';
 
 // ─── MenuScene 좌표 변환 로직 ────────────────────────────────────
 
@@ -237,5 +238,77 @@ describe('InputManager getCanvasPos 시뮬레이션', () => {
     const pos = getCanvasPos(50, 50, 10, 10);
     expect(pos.x).toBeGreaterThan(0);
     expect(pos.y).toBeGreaterThan(0);
+  });
+});
+
+describe('MenuScene 렌더링 회귀 테스트', () => {
+  class FakeCanvasContext {
+    fillStyle = '';
+    strokeStyle = '';
+    font = '';
+    textAlign: CanvasTextAlign = 'start';
+    textBaseline: CanvasTextBaseline = 'alphabetic';
+    lineWidth = 1;
+
+    fillRect(): void {}
+    save(): void {}
+    beginPath(): void {}
+    rect(): void {}
+    clip(): void {}
+    translate(): void {}
+    fillText(): void {}
+    stroke(): void {}
+    restore(): void {}
+    moveTo(): void {}
+    lineTo(): void {}
+    quadraticCurveTo(): void {}
+    closePath(): void {}
+    fill(): void {}
+  }
+
+  const baseLevel: LevelData = {
+    id: 1,
+    name: '테스트',
+    emoji: '🧩',
+    width: 5,
+    height: 5,
+    rowClues: [[1], [1], [1], [1], [1]],
+    colClues: [[1], [1], [1], [1], [1]],
+    solution: [
+      [1, 0, 0, 0, 0],
+      [0, 1, 0, 0, 0],
+      [0, 0, 1, 0, 0],
+      [0, 0, 0, 1, 0],
+      [0, 0, 0, 0, 1],
+    ],
+    difficulty: 'easy',
+  };
+
+  function createLevel(id: number): LevelData {
+    return {
+      ...baseLevel,
+      id,
+      name: `레벨 ${id}`,
+    };
+  }
+
+  test('스크롤바가 필요한 메뉴 렌더링은 예외를 던지지 않는다', () => {
+    const canvas = {
+      clientWidth: 360,
+      clientHeight: 280,
+    } as HTMLCanvasElement;
+    const ctx = new FakeCanvasContext() as unknown as CanvasRenderingContext2D;
+    const scene = new MenuScene(canvas, ctx);
+    const levels = Array.from({ length: 12 }, (_, index) => createLevel(index + 1));
+    const progressMap = new Map<number, LevelProgress>();
+
+    scene.enter({
+      levels,
+      progressMap,
+      onSelectLevel: () => undefined,
+    });
+
+    scene.render();
+    expect(true).toBe(true);
   });
 });
