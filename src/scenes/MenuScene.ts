@@ -95,19 +95,6 @@ export class MenuScene extends Scene {
     this.hoveredCard = this.getCardAt(x, y + this.scrollY - HEADER_H);
   }
 
-  getIsDragging(): boolean { return this.isDragging; }
-
-  /** 디버그용: 히트된 카드 id 반환, 내부적으로 onSelectLevel도 호출 */
-  handlePointerUpDebug(x: number, y: number): number {
-    const localY = y + this.scrollY - HEADER_H;
-    const cardId = this.isDragging ? -1 : this.getCardAt(x, localY);
-    this.isPointerDown = false;
-    this.targetScrollY = Math.max(0, Math.min(this.maxScroll, this.targetScrollY + this.velocity * 5));
-    this.isDragging = false;
-    if (cardId >= 0) this.onSelectLevel?.(cardId);
-    return cardId;
-  }
-
   handlePointerUp(x: number, y: number): void {
     if (!this.isDragging) {
       // 탭 처리: 스크린 y → 카드 로컬 y 변환

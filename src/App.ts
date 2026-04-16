@@ -31,9 +31,6 @@ export class App {
 
   private progressMap: Map<number, LevelProgress> = new Map();
 
-  // 디버그: 터치 이벤트 추적
-  private dbg = { downX: -1, downY: -1, upX: -1, upY: -1, hit: -1, log: 'init', cnt: 0 };
-
   constructor() {
     this.canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
     this.ctx = this.canvas.getContext('2d')!;
@@ -87,10 +84,6 @@ export class App {
 
   private setupInput(): void {
     this.inputManager.setOnDown((x, y, secondary) => {
-      this.dbg.downX = Math.round(x);
-      this.dbg.downY = Math.round(y);
-      this.dbg.cnt++;
-      this.dbg.log = `DOWN(${Math.round(x)},${Math.round(y)}) scene=${this.currentSceneName}`;
       const scene = this.currentSceneName;
       if (scene === 'menu') {
         this.menuScene.handlePointerDown(x, y);
@@ -111,14 +104,9 @@ export class App {
     });
 
     this.inputManager.setOnUp((x, y) => {
-      this.dbg.upX = Math.round(x);
-      this.dbg.upY = Math.round(y);
-      this.dbg.log = `UP(${Math.round(x)},${Math.round(y)}) drag=${this.menuScene.getIsDragging()}`;
       const scene = this.currentSceneName;
       if (scene === 'menu') {
-        const hit = this.menuScene.handlePointerUpDebug(x, y);
-        this.dbg.hit = hit;
-        this.dbg.log += ` hit=${hit}`;
+        this.menuScene.handlePointerUp(x, y);
       } else if (scene === 'game') {
         this.gameScene.handlePointerUp();
       }
@@ -291,46 +279,6 @@ export class App {
         break;
     }
 
-    // 디버그 오버레이
-    this.renderDebug();
-
     requestAnimationFrame(this.gameLoop.bind(this));
-  }
-
-  private renderDebug(): void {
-    const ctx = this.ctx;
-    const d = this.dbg;
-    const W = window.innerWidth;
-    const H = window.innerHeight;
-
-    // 반투명 배경 패널 (좌상단 - 항상 보임)
-    const pw = W, ph = 130;
-    ctx.fillStyle = 'rgba(0,0,0,0.85)';
-    ctx.fillRect(0, 0, pw, ph);
-
-    ctx.font = 'bold 20px monospace';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-
-    ctx.fillStyle = '#00ff88';
-    ctx.fillText(`[DBG] DPR:${window.devicePixelRatio} ${W}x${H}  cnt:${d.cnt}`, 8, 6);
-    ctx.fillText(`DOWN (${d.downX}, ${d.downY})`, 8, 34);
-    ctx.fillText(`UP   (${d.upX}, ${d.upY})   hit:${d.hit}`, 8, 62);
-    ctx.fillStyle = '#ffff00';
-    ctx.fillText(d.log.slice(0, 40), 8, 96);
-
-    // UP 위치 크로스헤어
-    if (d.upX >= 0 && d.upY > ph) {
-      ctx.strokeStyle = '#ff4444';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(d.upX - 20, d.upY); ctx.lineTo(d.upX + 20, d.upY);
-      ctx.moveTo(d.upX, d.upY - 20); ctx.lineTo(d.upX, d.upY + 20);
-      ctx.stroke();
-      ctx.strokeStyle = '#ff4444';
-      ctx.beginPath();
-      ctx.arc(d.upX, d.upY, 20, 0, Math.PI * 2);
-      ctx.stroke();
-    }
   }
 }
