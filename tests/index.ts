@@ -6,6 +6,7 @@
 import './nonogram.test';
 import './hitTest.test';
 import './levelData.test';
+import './gameScene.test';
 
 import { passed, failed, printSummary } from './testRunner';
 printSummary();
