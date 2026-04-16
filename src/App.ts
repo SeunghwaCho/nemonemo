@@ -103,10 +103,10 @@ export class App {
       }
     });
 
-    this.inputManager.setOnUp(() => {
+    this.inputManager.setOnUp((x, y) => {
       const scene = this.currentSceneName;
       if (scene === 'menu') {
-        this.menuScene.handlePointerUp(0, 0);
+        this.menuScene.handlePointerUp(x, y);
       } else if (scene === 'game') {
         this.gameScene.handlePointerUp();
       }

@@ -5,7 +5,7 @@
 
 export type InputCallback = (x: number, y: number, secondary: boolean) => void;
 export type InputMoveCallback = (x: number, y: number) => void;
-export type InputUpCallback = () => void;
+export type InputUpCallback = (x: number, y: number) => void;
 
 export class InputManager {
   private canvas: HTMLCanvasElement;
@@ -21,6 +21,8 @@ export class InputManager {
   private longPressFired = false;
   private isDragging = false;
   private isDown = false;
+  private lastX = 0;
+  private lastY = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -48,6 +50,8 @@ export class InputManager {
       const isSecondary = e.button === 2;
       this.isDown = true;
       this.isDragging = false;
+      this.lastX = pos.x;
+      this.lastY = pos.y;
       if (isSecondary) {
         this.onSecondary?.(pos.x, pos.y, true);
       } else {
@@ -60,14 +64,17 @@ export class InputManager {
       if (!this.isDown) return;
       this.isDragging = true;
       const pos = this.getCanvasPos(e.clientX, e.clientY);
+      this.lastX = pos.x;
+      this.lastY = pos.y;
       this.onMove?.(pos.x, pos.y);
     });
 
     window.addEventListener('mouseup', (e) => {
       if (!this.isDown) return;
+      const pos = this.getCanvasPos(e.clientX, e.clientY);
       this.isDown = false;
       this.isDragging = false;
-      this.onUp?.();
+      this.onUp?.(pos.x, pos.y);
     });
 
     // 우클릭 메뉴 비활성화
@@ -100,6 +107,8 @@ export class InputManager {
       e.preventDefault();
       const touch = e.touches[0];
       const pos = this.getCanvasPos(touch.clientX, touch.clientY);
+      this.lastX = pos.x;
+      this.lastY = pos.y;
 
       // 드래그 감지
       const dx = pos.x - this.longPressX;
@@ -123,7 +132,7 @@ export class InputManager {
       }
       this.isDown = false;
       this.isDragging = false;
-      this.onUp?.();
+      this.onUp?.(this.lastX, this.lastY);
     }, { passive: false });
 
     this.canvas.addEventListener('touchcancel', (e) => {
@@ -134,7 +143,7 @@ export class InputManager {
       }
       this.isDown = false;
       this.isDragging = false;
-      this.onUp?.();
+      this.onUp?.(this.lastX, this.lastY);
     }, { passive: false });
   }
 

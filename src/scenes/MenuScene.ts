@@ -36,6 +36,8 @@ const DIFFICULTY_LABELS: Record<string, string> = {
   expert: '전문가',
 };
 
+const HEADER_H = 80;
+
 export class MenuScene extends Scene {
   private levels: LevelData[] = [];
   private progressMap: Map<number, LevelProgress> = new Map();
@@ -89,13 +91,14 @@ export class MenuScene extends Scene {
       this.scrollY = this.targetScrollY;
     }
     this.lastTouchY = y;
-    this.hoveredCard = this.getCardAt(x, y + this.scrollY);
+    // 스크린 y → 카드 로컬 y 변환: y + scrollY - HEADER_H
+    this.hoveredCard = this.getCardAt(x, y + this.scrollY - HEADER_H);
   }
 
   handlePointerUp(x: number, y: number): void {
     if (!this.isDragging) {
-      // 탭 처리
-      const cardId = this.getCardAt(x, y + this.scrollY);
+      // 탭 처리: 스크린 y → 카드 로컬 y 변환
+      const cardId = this.getCardAt(x, y + this.scrollY - HEADER_H);
       if (cardId >= 0) {
         this.onSelectLevel?.(cardId);
       }
@@ -106,10 +109,10 @@ export class MenuScene extends Scene {
     this.isDragging = false;
   }
 
-  private getCardAt(x: number, absoluteY: number): number {
+  private getCardAt(x: number, localY: number): number {
     for (const rect of this.cardRects) {
       if (x >= rect.x && x <= rect.x + rect.w &&
-          absoluteY >= rect.y && absoluteY <= rect.y + rect.h) {
+          localY >= rect.y && localY <= rect.y + rect.h) {
         return rect.id;
       }
     }
@@ -140,22 +143,21 @@ export class MenuScene extends Scene {
     ctx.fillRect(0, 0, W, H);
 
     // 헤더
-    const headerH = 80;
     ctx.fillStyle = COLORS.header;
-    ctx.fillRect(0, 0, W, headerH);
+    ctx.fillRect(0, 0, W, HEADER_H);
 
     ctx.fillStyle = COLORS.text;
     ctx.font = 'bold 28px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🧩 네모네모 로직', W / 2, headerH / 2);
+    ctx.fillText('🧩 네모네모 로직', W / 2, HEADER_H / 2);
 
     // 레벨 카드 그리기
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, headerH, W, H - headerH);
+    ctx.rect(0, HEADER_H, W, H - HEADER_H);
     ctx.clip();
-    ctx.translate(0, -this.scrollY + headerH);
+    ctx.translate(0, -this.scrollY + HEADER_H);
 
     this.cardRects = [];
     const padding = 12;
@@ -174,7 +176,8 @@ export class MenuScene extends Scene {
       const cardX = offsetX + col * (cardW + padding);
       const cardY = row * (cardH + padding) + padding;
 
-      this.cardRects.push({ id: level.id, x: cardX, y: cardY + this.scrollY - headerH, w: cardW, h: cardH });
+      // cardY는 translate 적용 전 로컬 Y — 히트 테스트에서 (screenY + scrollY - HEADER_H)와 비교
+      this.cardRects.push({ id: level.id, x: cardX, y: cardY, w: cardW, h: cardH });
 
       const progress = this.progressMap.get(level.id);
       const completed = progress?.completed || false;
@@ -237,18 +240,18 @@ export class MenuScene extends Scene {
       maxY = Math.max(maxY, cardY + cardH + padding);
     });
 
-    this.maxScroll = Math.max(0, maxY - (H - headerH));
+    this.maxScroll = Math.max(0, maxY - (H - HEADER_H));
 
     ctx.restore();
 
     // 스크롤바
     if (this.maxScroll > 0) {
       const scrollRatio = this.scrollY / this.maxScroll;
-      const trackH = H - headerH - 20;
-      const thumbH = Math.max(30, trackH * ((H - headerH) / (H - headerH + this.maxScroll)));
+      const trackH = H - HEADER_H - 20;
+      const thumbH = Math.max(30, trackH * ((H - HEADER_H) / (H - HEADER_H + this.maxScroll)));
       const thumbY = headerH + 10 + scrollRatio * (trackH - thumbH);
       ctx.fillStyle = 'rgba(255,255,255,0.2)';
-      ctx.fillRect(W - 8, headerH + 10, 4, trackH);
+      ctx.fillRect(W - 8, HEADER_H + 10, 4, trackH);
       ctx.fillStyle = 'rgba(255,255,255,0.5)';
       ctx.fillRect(W - 8, thumbY, 4, thumbH);
     }

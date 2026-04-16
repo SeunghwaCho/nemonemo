@@ -1,0 +1,2 @@
+./build.sh
+cd release && goserver
