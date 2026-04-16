@@ -5,7 +5,7 @@
   "scripts": {
     "generate": "node scripts/generateLevels.js",
     "build": "node scripts/generateLevels.js && ./node_modules/.bin/esbuild src/main.ts --bundle --outfile=dist/dist.js --target=es2017",
-    "test": "./node_modules/.bin/ts-node --project tsconfig.test.json tests/nonogram.test.ts",
+    "test": "./node_modules/.bin/esbuild tests/index.ts --bundle --platform=node --outfile=dist/test_run.js --log-level=silent && node dist/test_run.js",
     "dev": "node scripts/generateLevels.js && ./node_modules/.bin/esbuild src/main.ts --bundle --outfile=dist/dist.js --watch"
   },
   "devDependencies": {
