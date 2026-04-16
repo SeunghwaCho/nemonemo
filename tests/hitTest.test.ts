@@ -4,7 +4,13 @@
  */
 
 import { test, describe, expect } from './testRunner';
-import { MenuScene } from '../src/scenes/MenuScene';
+import {
+  MenuScene,
+  HEADER_H,
+  SCROLLBAR_MARGIN,
+  SCROLLBAR_RIGHT_GAP,
+  SCROLLBAR_WIDTH,
+} from '../src/scenes/MenuScene';
 import { CellState, LevelData, LevelProgress } from '../src/types';
 
 // ─── MenuScene 좌표 변환 로직 ────────────────────────────────────
@@ -242,11 +248,6 @@ describe('InputManager getCanvasPos 시뮬레이션', () => {
 });
 
 describe('MenuScene 렌더링 회귀 테스트', () => {
-  const HEADER_H = 80;
-  const SCROLLBAR_MARGIN = 10;
-  const SCROLLBAR_WIDTH = 4;
-  const SCROLLBAR_RIGHT_GAP = 4;
-
   class FakeCanvasContext {
     fillRectCalls: Array<{ x: number; y: number; w: number; h: number }> = [];
     fillStyle = '';
@@ -321,10 +322,21 @@ describe('MenuScene 렌더링 회귀 테스트', () => {
     const scrollbarX = canvas.clientWidth - SCROLLBAR_WIDTH - SCROLLBAR_RIGHT_GAP;
     const trackY = HEADER_H + SCROLLBAR_MARGIN;
     const trackH = canvas.clientHeight - HEADER_H - SCROLLBAR_MARGIN * 2;
-    const scrollbarRects = fakeCtx.fillRectCalls.filter(({ x, w }) => x === scrollbarX && w === SCROLLBAR_WIDTH);
+    let scrollbarRects = fakeCtx.fillRectCalls.filter(({ x, w }) => x === scrollbarX && w === SCROLLBAR_WIDTH);
     expect(scrollbarRects.length).toBe(2);
     expect(scrollbarRects[0]).toEqual({ x: scrollbarX, y: trackY, w: SCROLLBAR_WIDTH, h: trackH });
-    expect(scrollbarRects[1].y).toBeGreaterThanOrEqual(trackY);
+    expect(scrollbarRects[1].y).toBe(trackY);
     expect(scrollbarRects[1].h).toBeGreaterThanOrEqual(30);
+
+    fakeCtx.fillRectCalls = [];
+    scene.handleScroll(9999);
+    for (let index = 0; index < 20; index++) {
+      scene.update(1 / 60);
+    }
+    scene.render();
+
+    scrollbarRects = fakeCtx.fillRectCalls.filter(({ x, w }) => x === scrollbarX && w === SCROLLBAR_WIDTH);
+    expect(scrollbarRects.length).toBe(2);
+    expect(scrollbarRects[1].y).toBeGreaterThan(trackY);
   });
 });

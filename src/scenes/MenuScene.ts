@@ -36,10 +36,10 @@ const DIFFICULTY_LABELS: Record<string, string> = {
   expert: '전문가',
 };
 
-const HEADER_H = 80;
-const SCROLLBAR_MARGIN = 10;
-const SCROLLBAR_WIDTH = 4;
-const SCROLLBAR_RIGHT_GAP = 4;
+export const HEADER_H = 80;
+export const SCROLLBAR_MARGIN = 10;
+export const SCROLLBAR_WIDTH = 4;
+export const SCROLLBAR_RIGHT_GAP = 4;
 
 export class MenuScene extends Scene {
   private levels: LevelData[] = [];
