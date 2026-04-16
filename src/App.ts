@@ -108,7 +108,7 @@ export class App {
       if (scene === 'menu') {
         this.menuScene.handlePointerUp(x, y);
       } else if (scene === 'game') {
-        this.gameScene.handlePointerUp();
+        this.gameScene.handlePointerUp(x, y);
       }
     });
 

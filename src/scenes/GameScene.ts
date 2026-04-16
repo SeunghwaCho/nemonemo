@@ -177,27 +177,10 @@ export class GameScene extends Scene {
   }
 
   handlePointerDown(x: number, y: number, secondary: boolean): void {
-    if (this.showConfirmDialog) {
-      this.handleDialogClick(x, y);
-      return;
-    }
-
-    // 버튼 확인
-    if (this.hitRect(x, y, this.backBtnRect)) {
-      this.confirmDialogType = 'back';
-      this.showConfirmDialog = true;
-      return;
-    }
-    if (this.hitRect(x, y, this.restartBtnRect)) {
-      this.confirmDialogType = 'restart';
-      this.showConfirmDialog = true;
-      return;
-    }
-
-    if (this.isComplete) return;
-
     this.isPointerDown = true;
     this.isDragging = false;
+
+    if (this.showConfirmDialog || this.isComplete) return;
 
     const cell = this.getCellFromPos(x, y);
     if (!cell) return;
@@ -282,11 +265,32 @@ export class GameScene extends Scene {
     this.checkWin();
   }
 
-  handlePointerUp(): void {
+  handlePointerUp(x: number, y: number): void {
+    const wasDragging = this.isDragging;
     this.isPointerDown = false;
     this.isDragging = false;
     this.dragAction = null;
     this.lastDragCell = null;
+
+    // 다이얼로그 버튼 처리 (탭 확인)
+    if (this.showConfirmDialog) {
+      this.handleDialogClick(x, y);
+      return;
+    }
+
+    // 헤더 버튼 처리 (드래그가 아닌 탭일 때만)
+    if (!wasDragging) {
+      if (this.hitRect(x, y, this.backBtnRect)) {
+        this.confirmDialogType = 'back';
+        this.showConfirmDialog = true;
+        return;
+      }
+      if (this.hitRect(x, y, this.restartBtnRect)) {
+        this.confirmDialogType = 'restart';
+        this.showConfirmDialog = true;
+        return;
+      }
+    }
   }
 
   private checkWin(): void {
