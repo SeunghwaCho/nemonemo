@@ -322,7 +322,11 @@ describe('MenuScene 렌더링 회귀 테스트', () => {
     const scrollbarX = canvas.clientWidth - SCROLLBAR_WIDTH - SCROLLBAR_RIGHT_GAP;
     const trackY = HEADER_H + SCROLLBAR_MARGIN;
     const trackH = canvas.clientHeight - HEADER_H - SCROLLBAR_MARGIN * 2;
-    let scrollbarRects = fakeCtx.fillRectCalls.filter(({ x, w }) => x === scrollbarX && w === SCROLLBAR_WIDTH);
+    const getScrollbarRects = () => fakeCtx.fillRectCalls.filter(
+      ({ x, w }) => x === scrollbarX && w === SCROLLBAR_WIDTH
+    );
+
+    let scrollbarRects = getScrollbarRects();
     expect(scrollbarRects.length).toBe(2);
     expect(scrollbarRects[0]).toEqual({ x: scrollbarX, y: trackY, w: SCROLLBAR_WIDTH, h: trackH });
     expect(scrollbarRects[1].y).toBe(trackY);
@@ -330,12 +334,12 @@ describe('MenuScene 렌더링 회귀 테스트', () => {
 
     fakeCtx.fillRectCalls = [];
     scene.handleScroll(9999);
-    for (let index = 0; index < 20; index++) {
+    for (let frame = 0; frame < 20; frame++) {
       scene.update(1 / 60);
     }
     scene.render();
 
-    scrollbarRects = fakeCtx.fillRectCalls.filter(({ x, w }) => x === scrollbarX && w === SCROLLBAR_WIDTH);
+    scrollbarRects = getScrollbarRects();
     expect(scrollbarRects.length).toBe(2);
     expect(scrollbarRects[1].y).toBeGreaterThan(trackY);
   });
