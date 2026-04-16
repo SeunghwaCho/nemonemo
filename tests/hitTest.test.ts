@@ -4,7 +4,14 @@
  */
 
 import { test, describe, expect } from './testRunner';
-import { CellState } from '../src/types';
+import {
+  MenuScene,
+  HEADER_H,
+  SCROLLBAR_MARGIN,
+  SCROLLBAR_RIGHT_GAP,
+  SCROLLBAR_WIDTH,
+} from '../src/scenes/MenuScene';
+import { CellState, LevelData, LevelProgress } from '../src/types';
 
 // ─── MenuScene 좌표 변환 로직 ────────────────────────────────────
 
@@ -237,5 +244,103 @@ describe('InputManager getCanvasPos 시뮬레이션', () => {
     const pos = getCanvasPos(50, 50, 10, 10);
     expect(pos.x).toBeGreaterThan(0);
     expect(pos.y).toBeGreaterThan(0);
+  });
+});
+
+describe('MenuScene 렌더링 회귀 테스트', () => {
+  class FakeCanvasContext {
+    fillRectCalls: Array<{ x: number; y: number; w: number; h: number }> = [];
+    fillStyle = '';
+    strokeStyle = '';
+    font = '';
+    textAlign: CanvasTextAlign = 'start';
+    textBaseline: CanvasTextBaseline = 'alphabetic';
+    lineWidth = 1;
+
+    fillRect(x: number, y: number, w: number, h: number): void {
+      this.fillRectCalls.push({ x, y, w, h });
+    }
+    save(): void {}
+    beginPath(): void {}
+    rect(): void {}
+    clip(): void {}
+    translate(): void {}
+    fillText(): void {}
+    stroke(): void {}
+    restore(): void {}
+    moveTo(): void {}
+    lineTo(): void {}
+    quadraticCurveTo(): void {}
+    closePath(): void {}
+    fill(): void {}
+  }
+
+  const baseLevel: LevelData = {
+    id: 1,
+    name: '테스트',
+    emoji: '🧩',
+    width: 5,
+    height: 5,
+    rowClues: [[1], [1], [1], [1], [1]],
+    colClues: [[1], [1], [1], [1], [1]],
+    solution: [
+      [1, 0, 0, 0, 0],
+      [0, 1, 0, 0, 0],
+      [0, 0, 1, 0, 0],
+      [0, 0, 0, 1, 0],
+      [0, 0, 0, 0, 1],
+    ],
+    difficulty: 'easy',
+  };
+
+  function createLevel(id: number): LevelData {
+    return {
+      ...baseLevel,
+      id,
+      name: `레벨 ${id}`,
+    };
+  }
+
+  test('스크롤바가 있는 메뉴가 올바르게 렌더링된다', () => {
+    const canvas = {
+      clientWidth: 360,
+      clientHeight: 280,
+    } as HTMLCanvasElement;
+    const fakeCtx = new FakeCanvasContext();
+    const ctx = fakeCtx as unknown as CanvasRenderingContext2D;
+    const scene = new MenuScene(canvas, ctx);
+    const levels = Array.from({ length: 12 }, (_, index) => createLevel(index + 1));
+    const progressMap = new Map<number, LevelProgress>();
+
+    scene.enter({
+      levels,
+      progressMap,
+      onSelectLevel: () => undefined,
+    });
+
+    scene.render();
+    const scrollbarX = canvas.clientWidth - SCROLLBAR_WIDTH - SCROLLBAR_RIGHT_GAP;
+    const trackY = HEADER_H + SCROLLBAR_MARGIN;
+    const trackH = canvas.clientHeight - HEADER_H - SCROLLBAR_MARGIN * 2;
+    const getScrollbarRects = () => fakeCtx.fillRectCalls.filter(
+      ({ x, w }) => x === scrollbarX && w === SCROLLBAR_WIDTH
+    );
+
+    let scrollbarRects = getScrollbarRects();
+    expect(scrollbarRects.length).toBe(2);
+    expect(scrollbarRects[0]).toEqual({ x: scrollbarX, y: trackY, w: SCROLLBAR_WIDTH, h: trackH });
+    expect(scrollbarRects[1].y).toBe(trackY);
+    expect(scrollbarRects[1].h).toBeGreaterThanOrEqual(30);
+
+    fakeCtx.fillRectCalls = [];
+    scene.handleScroll(9999);
+    for (let frame = 0; frame < 20; frame++) {
+      scene.update(1 / 60);
+    }
+    scene.render();
+
+    scrollbarRects = getScrollbarRects();
+    expect(scrollbarRects.length).toBe(2);
+    expect(scrollbarRects[1].y).toBeGreaterThan(trackY);
   });
 });
