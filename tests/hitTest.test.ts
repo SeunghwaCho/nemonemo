@@ -242,6 +242,11 @@ describe('InputManager getCanvasPos 시뮬레이션', () => {
 });
 
 describe('MenuScene 렌더링 회귀 테스트', () => {
+  const HEADER_H = 80;
+  const SCROLLBAR_MARGIN = 10;
+  const SCROLLBAR_WIDTH = 4;
+  const SCROLLBAR_RIGHT_GAP = 4;
+
   class FakeCanvasContext {
     fillRectCalls: Array<{ x: number; y: number; w: number; h: number }> = [];
     fillStyle = '';
@@ -295,7 +300,7 @@ describe('MenuScene 렌더링 회귀 테스트', () => {
     };
   }
 
-  test('스크롤바가 필요한 메뉴 렌더링은 예외를 던지지 않는다', () => {
+  test('스크롤바가 있는 메뉴가 올바르게 렌더링된다', () => {
     const canvas = {
       clientWidth: 360,
       clientHeight: 280,
@@ -313,10 +318,13 @@ describe('MenuScene 렌더링 회귀 테스트', () => {
     });
 
     scene.render();
-    const scrollbarRects = fakeCtx.fillRectCalls.filter(({ x, w }) => x === 352 && w === 4);
+    const scrollbarX = canvas.clientWidth - SCROLLBAR_WIDTH - SCROLLBAR_RIGHT_GAP;
+    const trackY = HEADER_H + SCROLLBAR_MARGIN;
+    const trackH = canvas.clientHeight - HEADER_H - SCROLLBAR_MARGIN * 2;
+    const scrollbarRects = fakeCtx.fillRectCalls.filter(({ x, w }) => x === scrollbarX && w === SCROLLBAR_WIDTH);
     expect(scrollbarRects.length).toBe(2);
-    expect(scrollbarRects[0]).toEqual({ x: 352, y: 90, w: 4, h: 180 });
-    expect(scrollbarRects[1].y).toBeGreaterThanOrEqual(90);
+    expect(scrollbarRects[0]).toEqual({ x: scrollbarX, y: trackY, w: SCROLLBAR_WIDTH, h: trackH });
+    expect(scrollbarRects[1].y).toBeGreaterThanOrEqual(trackY);
     expect(scrollbarRects[1].h).toBeGreaterThanOrEqual(30);
   });
 });

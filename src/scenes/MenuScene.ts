@@ -37,6 +37,9 @@ const DIFFICULTY_LABELS: Record<string, string> = {
 };
 
 const HEADER_H = 80;
+const SCROLLBAR_MARGIN = 10;
+const SCROLLBAR_WIDTH = 4;
+const SCROLLBAR_RIGHT_GAP = 4;
 
 export class MenuScene extends Scene {
   private levels: LevelData[] = [];
@@ -247,13 +250,14 @@ export class MenuScene extends Scene {
     // 스크롤바
     if (this.maxScroll > 0) {
       const scrollRatio = this.scrollY / this.maxScroll;
-      const trackH = H - HEADER_H - 20;
+      const trackH = H - HEADER_H - SCROLLBAR_MARGIN * 2;
       const thumbH = Math.max(30, trackH * ((H - HEADER_H) / (H - HEADER_H + this.maxScroll)));
-      const thumbY = HEADER_H + 10 + scrollRatio * (trackH - thumbH);
+      const scrollbarX = W - SCROLLBAR_WIDTH - SCROLLBAR_RIGHT_GAP;
+      const thumbY = HEADER_H + SCROLLBAR_MARGIN + scrollRatio * (trackH - thumbH);
       ctx.fillStyle = 'rgba(255,255,255,0.2)';
-      ctx.fillRect(W - 8, HEADER_H + 10, 4, trackH);
+      ctx.fillRect(scrollbarX, HEADER_H + SCROLLBAR_MARGIN, SCROLLBAR_WIDTH, trackH);
       ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.fillRect(W - 8, thumbY, 4, thumbH);
+      ctx.fillRect(scrollbarX, thumbY, SCROLLBAR_WIDTH, thumbH);
     }
   }
 
