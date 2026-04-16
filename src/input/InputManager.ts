@@ -89,6 +89,8 @@ export class InputManager {
       const pos = this.getCanvasPos(touch.clientX, touch.clientY);
       this.longPressX = pos.x;
       this.longPressY = pos.y;
+      this.lastX = pos.x;   // touchend에서 사용할 마지막 위치 기록
+      this.lastY = pos.y;
       this.longPressFired = false;
       this.isDown = true;
       this.isDragging = false;
