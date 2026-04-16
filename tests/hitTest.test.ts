@@ -243,6 +243,7 @@ describe('InputManager getCanvasPos 시뮬레이션', () => {
 
 describe('MenuScene 렌더링 회귀 테스트', () => {
   class FakeCanvasContext {
+    fillRectCalls: Array<{ x: number; y: number; w: number; h: number }> = [];
     fillStyle = '';
     strokeStyle = '';
     font = '';
@@ -250,7 +251,9 @@ describe('MenuScene 렌더링 회귀 테스트', () => {
     textBaseline: CanvasTextBaseline = 'alphabetic';
     lineWidth = 1;
 
-    fillRect(): void {}
+    fillRect(x: number, y: number, w: number, h: number): void {
+      this.fillRectCalls.push({ x, y, w, h });
+    }
     save(): void {}
     beginPath(): void {}
     rect(): void {}
@@ -297,7 +300,8 @@ describe('MenuScene 렌더링 회귀 테스트', () => {
       clientWidth: 360,
       clientHeight: 280,
     } as HTMLCanvasElement;
-    const ctx = new FakeCanvasContext() as unknown as CanvasRenderingContext2D;
+    const fakeCtx = new FakeCanvasContext();
+    const ctx = fakeCtx as unknown as CanvasRenderingContext2D;
     const scene = new MenuScene(canvas, ctx);
     const levels = Array.from({ length: 12 }, (_, index) => createLevel(index + 1));
     const progressMap = new Map<number, LevelProgress>();
@@ -309,6 +313,10 @@ describe('MenuScene 렌더링 회귀 테스트', () => {
     });
 
     scene.render();
-    expect(true).toBe(true);
+    const scrollbarRects = fakeCtx.fillRectCalls.filter(({ x, w }) => x === 352 && w === 4);
+    expect(scrollbarRects.length).toBe(2);
+    expect(scrollbarRects[0]).toEqual({ x: 352, y: 90, w: 4, h: 180 });
+    expect(scrollbarRects[1].y).toBeGreaterThanOrEqual(90);
+    expect(scrollbarRects[1].h).toBeGreaterThanOrEqual(30);
   });
 });
