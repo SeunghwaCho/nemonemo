@@ -1,0 +1,72 @@
+@startuml state_diagram
+title Nonogram Game State Diagram
+
+skinparam state {
+  BackgroundColor LightBlue
+  BorderColor DarkBlue
+  FontColor Black
+  ArrowColor DarkBlue
+}
+skinparam backgroundColor White
+
+[*] --> Initializing : App starts
+
+state Initializing {
+  [*] --> LoadingDB
+  LoadingDB --> LoadingLevels : DB ready (or failed gracefully)
+  LoadingLevels --> LoadingProgress : levels.json parsed
+  LoadingProgress --> [*] : progress restored
+}
+
+Initializing --> MenuScene : init complete
+
+state MenuScene {
+  [*] --> Browsing
+  Browsing --> Scrolling : drag / mouse wheel
+  Scrolling --> Browsing : release
+  Browsing --> LevelSelected : tap card
+}
+
+state GameScene {
+  [*] --> Idle
+  Idle --> Playing : first cell interaction
+  Playing --> Paused : pause button
+  Paused --> Playing : resume button
+  Playing --> ConfirmRestart : restart button
+  Playing --> ConfirmBack : back button
+  ConfirmRestart --> Playing : cancel
+  ConfirmRestart --> Idle : confirm (grid reset)
+  ConfirmBack --> Playing : cancel
+  ConfirmBack --> MenuScene : confirm
+  Playing --> Complete : checkSolution() == true
+  Paused --> MenuScene : menu button (from pause)
+  Paused --> ConfirmRestart : restart button (from pause)
+
+  state Playing {
+    [*] --> WaitingInput
+    WaitingInput --> DraggingFill : left-click / tap on empty cell
+    WaitingInput --> DraggingMark : right-click / long-press on empty cell
+    WaitingInput --> DraggingUnfill : left-click / tap on filled cell
+    WaitingInput --> DraggingUnmark : right-click / long-press on marked cell
+    DraggingFill --> WaitingInput : pointer up
+    DraggingMark --> WaitingInput : pointer up
+    DraggingUnfill --> WaitingInput : pointer up
+    DraggingUnmark --> WaitingInput : pointer up
+  }
+}
+
+state ResultScene {
+  [*] --> ShowingResult
+  ShowingResult --> AnimatingStars : render starts
+  AnimatingStars --> AnimatingStars : +1 star per 0.3s
+  AnimatingStars --> AllStarsRevealed : stars == calculated
+  AllStarsRevealed --> [*]
+}
+
+MenuScene --> GameScene : LevelSelected (startLevel)
+GameScene --> ResultScene : Complete (onLevelComplete)
+ResultScene --> MenuScene : menu button
+ResultScene --> GameScene : replay button (startLevelFresh)
+ResultScene --> GameScene : next button (startLevel next)
+
+@enduml

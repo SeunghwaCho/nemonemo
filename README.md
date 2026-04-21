@@ -126,6 +126,26 @@ nemonemo/
 
 또는 `scripts/generateLevels.js`를 수정 후 `node scripts/generateLevels.js`를 실행하세요.
 
+## Architecture Diagrams
+
+### State Diagram
+
+The game transitions between three main scenes: Menu, Game, and Result. Within GameScene, nested states handle input modes, pause, and confirmation dialogs.
+
+![State Diagram](docs/state_diagram.png)
+
+### Class Diagram
+
+The codebase is organized into five packages: App (orchestrator), Scenes (UI layers), Core (business logic), Input (event abstraction), and Types (shared interfaces).
+
+![Class Diagram](docs/class_diagram.png)
+
+### Sequence Diagram
+
+Key interaction flows: initialization, level selection, gameplay (fill/mark cells), auto-save, puzzle completion, and navigation between screens.
+
+![Sequence Diagram](docs/sequence_diagram.png)
+
 ## 라이센스
 
 MIT License

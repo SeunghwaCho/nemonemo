@@ -1,0 +1,239 @@
+@startuml class_diagram
+title Nonogram Game Class Diagram
+
+skinparam class {
+  BackgroundColor LightYellow
+  BorderColor DarkOrange
+  FontColor Black
+  ArrowColor DarkOrange
+}
+skinparam backgroundColor White
+skinparam packageBackgroundColor LightGray
+
+package "Entry" {
+  class main {
+    +{static} DOMContentLoaded()
+  }
+}
+
+package "App" {
+  class App {
+    -canvas: HTMLCanvasElement
+    -ctx: CanvasRenderingContext2D
+    -db: DBManager
+    -levelLoader: LevelLoader
+    -inputManager: InputManager
+    -menuScene: MenuScene
+    -gameScene: GameScene
+    -resultScene: ResultScene
+    -currentSceneName: string
+    -progressMap: Map<number, LevelProgress>
+    -lastFrameTime: number
+    +init(): Promise<void>
+    +setupCanvas(): void
+    +setupInput(): void
+    +gameLoop(timestamp: number): void
+    +showMenu(): void
+    +startLevel(levelId: number): void
+    +onLevelComplete(level, progress): void
+    +startLevelFresh(levelId: number): void
+  }
+}
+
+package "Scenes" {
+  abstract class Scene {
+    #canvas: HTMLCanvasElement
+    #ctx: CanvasRenderingContext2D
+    +{abstract} enter(data?): void
+    +{abstract} exit(): void
+    +{abstract} update(dt: number): void
+    +{abstract} render(): void
+    +width: number
+    +height: number
+  }
+
+  class MenuScene {
+    -levels: LevelData[]
+    -progressMap: Map<number, LevelProgress>
+    -scrollY: number
+    -targetScrollY: number
+    -maxScroll: number
+    -hoveredCard: number
+    -cardRects: CardRect[]
+    -isDragging: boolean
+    -velocity: number
+    +enter(data): void
+    +exit(): void
+    +update(dt): void
+    +render(): void
+    +handlePointerDown(x, y): void
+    +handlePointerMove(x, y): void
+    +handlePointerUp(x, y): void
+    +handleScroll(delta): void
+    -getCardAt(x, y): LevelData | null
+    -roundRect(...): void
+  }
+
+  class GameScene {
+    -level: LevelData
+    -grid: CellState[][]
+    -layout: GridLayout
+    -startTime: number
+    -elapsed: number
+    -timerActive: boolean
+    -isComplete: boolean
+    -isPaused: boolean
+    -completedRows: boolean[]
+    -completedCols: boolean[]
+    -dragAction: string | null
+    -lastDragCell: {row, col} | null
+    -showConfirmDialog: boolean
+    -confirmDialogType: string
+    +enter(data): void
+    +exit(): void
+    +update(dt): void
+    +render(): void
+    +handlePointerDown(x, y, secondary): void
+    +handlePointerMove(x, y): void
+    +handlePointerUp(x, y): void
+    -getCellFromPos(x, y): {row, col} | null
+    -updateCompleted(): void
+    -checkWin(): void
+    -calcLayout(): GridLayout
+    -saveCurrentProgress(): void
+    -pause(): void
+    -resume(): void
+    -togglePause(): void
+  }
+
+  class ResultScene {
+    -level: LevelData
+    -progress: LevelProgress
+    -animTimer: number
+    -starReveal: number
+    -menuBtnRect: Rect
+    -replayBtnRect: Rect
+    -nextBtnRect: Rect
+    +enter(data): void
+    +exit(): void
+    +update(dt): void
+    +render(): void
+    +handlePointerDown(x, y): void
+    -hitRect(rect, x, y): boolean
+  }
+
+  Scene <|-- MenuScene
+  Scene <|-- GameScene
+  Scene <|-- ResultScene
+}
+
+package "Core" {
+  class DBManager {
+    -db: IDBDatabase
+    -available: boolean
+    +init(): Promise<void>
+    +saveProgress(progress: LevelProgress): Promise<void>
+    +loadProgress(levelId: number): Promise<LevelProgress | null>
+    +loadAllProgress(): Promise<LevelProgress[]>
+    +clearProgress(levelId: number): Promise<void>
+  }
+
+  class LevelLoader {
+    -levels: LevelData[]
+    -loaded: boolean
+    +load(): Promise<void>
+    +getLevel(id: number): LevelData | undefined
+    +getAllLevels(): LevelData[]
+    -getFallbackLevels(): LevelData[]
+  }
+
+  class NonogramLogic <<utility>> {
+    +{static} getRuns(line: number[]): number[]
+    +{static} createGrid(w, h): CellState[][]
+    +{static} checkLine(line, clue): boolean
+    +{static} getCompletedRows(grid, level): boolean[]
+    +{static} getCompletedCols(grid, level): boolean[]
+    +{static} checkSolution(grid, level): boolean
+    +{static} calculateStars(seconds, level): number
+    +{static} serializeGrid(grid): number[][]
+    +{static} deserializeGrid(data): CellState[][]
+  }
+}
+
+package "Input" {
+  class InputManager {
+    -canvas: HTMLCanvasElement
+    -onDown: Function
+    -onMove: Function
+    -onUp: Function
+    -onSecondary: Function
+    -longPressTimer: number
+    -longPressThreshold: number
+    -isDragging: boolean
+    -isDown: boolean
+    +setOnDown(cb): void
+    +setOnMove(cb): void
+    +setOnUp(cb): void
+    +setOnSecondary(cb): void
+    +bindEvents(): void
+    -getCanvasPos(clientX, clientY): {x, y}
+  }
+}
+
+package "Types" {
+  enum CellState {
+    Empty = 0
+    Filled = 1
+    Marked = 2
+  }
+
+  interface LevelData {
+    +id: number
+    +name: string
+    +emoji: string
+    +width: number
+    +height: number
+    +rowClues: number[][]
+    +colClues: number[][]
+    +solution: number[][]
+    +difficulty: string
+  }
+
+  interface LevelProgress {
+    +levelId: number
+    +completed: boolean
+    +stars: number
+    +bestTime: number
+    +currentGrid: number[][] | null
+  }
+
+  interface GridLayout {
+    +cellSize: number
+    +startX: number
+    +startY: number
+    +clueColWidth: number
+    +clueRowHeight: number
+    +gridWidth: number
+    +gridHeight: number
+  }
+}
+
+main ..> App : creates
+App *-- DBManager
+App *-- LevelLoader
+App *-- InputManager
+App *-- MenuScene
+App *-- GameScene
+App *-- ResultScene
+GameScene ..> NonogramLogic : uses
+GameScene ..> CellState : uses
+GameScene ..> LevelData : uses
+GameScene ..> GridLayout : uses
+MenuScene ..> LevelData : uses
+MenuScene ..> LevelProgress : uses
+ResultScene ..> LevelData : uses
+ResultScene ..> LevelProgress : uses
+DBManager ..> LevelProgress : persists
+LevelLoader ..> LevelData : loads
+
+@enduml

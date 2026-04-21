@@ -1,0 +1,172 @@
+@startuml sequence_diagram
+title Nonogram Game - Key Interaction Sequence Diagram
+
+skinparam sequence {
+  ActorBackgroundColor LightGreen
+  ActorBorderColor DarkGreen
+  ParticipantBackgroundColor LightBlue
+  ParticipantBorderColor DarkBlue
+  LifeLineBorderColor Gray
+  ArrowColor DarkBlue
+  BoxBackgroundColor LightYellow
+  BoxBorderColor Orange
+}
+skinparam backgroundColor White
+
+actor Player
+participant "InputManager" as IM
+participant "App" as App
+participant "MenuScene" as Menu
+participant "GameScene" as Game
+participant "ResultScene" as Result
+participant "NonogramLogic" as Logic
+participant "DBManager" as DB
+participant "LevelLoader" as LL
+
+== Initialization ==
+Player -> App: open browser
+activate App
+App -> DB: init()
+DB --> App: ready (or graceful failure)
+App -> LL: load()
+LL -> LL: fetch levels.json
+LL --> App: LevelData[]
+App -> DB: loadAllProgress()
+DB --> App: LevelProgress[]
+App -> Menu: enter({ levels, progressMap })
+App -> IM: bindEvents()
+App -> App: requestAnimationFrame(gameLoop)
+deactivate App
+
+== Level Selection ==
+Player -> IM: tap level card
+activate IM
+IM -> App: onDown(x, y)
+App -> Menu: handlePointerDown(x, y)
+IM -> App: onUp(x, y)
+App -> Menu: handlePointerUp(x, y)
+Menu -> Menu: getCardAt(x, y)
+Menu -> App: onSelectLevel(levelId)
+deactivate IM
+
+activate App
+App -> DB: loadProgress(levelId)
+DB --> App: LevelProgress | null
+App -> Menu: exit()
+App -> Game: enter({ level, progress })
+activate Game
+Game -> Logic: createGrid(w, h)
+Logic --> Game: CellState[][]
+Game -> Logic: deserializeGrid(savedGrid)
+Logic --> Game: restored CellState[][]
+deactivate App
+
+== Gameplay ==
+Player -> IM: left-click cell
+activate IM
+IM -> App: onDown(x, y, false)
+App -> Game: handlePointerDown(x, y, false)
+activate Game
+Game -> Game: getCellFromPos(x, y)
+Game -> Game: timerActive = true
+Game -> Game: dragAction = 'fill'
+Game -> Game: grid[row][col] = Filled
+Game -> Logic: getCompletedRows/Cols(grid, level)
+Logic --> Game: boolean[]
+deactivate IM
+
+Player -> IM: drag across cells
+activate IM
+IM -> App: onMove(x, y)
+App -> Game: handlePointerMove(x, y)
+Game -> Game: getCellFromPos(x, y)
+Game -> Game: grid[row][col] = Filled
+Game -> Logic: checkSolution(grid, level)
+Logic --> Game: false (not done yet)
+deactivate IM
+
+Player -> IM: release
+IM -> App: onUp(x, y)
+App -> Game: handlePointerUp(x, y)
+Game -> Game: dragAction = null
+deactivate Game
+
+== Auto Save (every 30s) ==
+App -> Game: update(dt)
+activate Game
+Game -> Game: autoSaveTimer >= 30s
+Game -> Logic: serializeGrid(grid)
+Logic --> Game: number[][]
+Game -> DB: saveProgress(progress)
+DB --> Game: saved
+deactivate Game
+
+== Right-click / Long-press (Mark X) ==
+Player -> IM: right-click cell
+activate IM
+IM -> App: onSecondary(x, y, true)
+App -> Game: handlePointerDown(x, y, true)
+activate Game
+Game -> Game: dragAction = 'mark'
+Game -> Game: grid[row][col] = Marked
+deactivate Game
+deactivate IM
+
+== Puzzle Complete ==
+Player -> IM: fill last cell
+activate IM
+IM -> App: onDown(x, y)
+App -> Game: handlePointerDown(x, y, false)
+activate Game
+Game -> Game: grid[row][col] = Filled
+Game -> Logic: checkSolution(grid, level)
+Logic --> Game: true!
+Game -> Game: isComplete = true
+Game -> Game: timerActive = false
+Game -> Logic: calculateStars(elapsed, level)
+Logic --> Game: stars (1-3)
+Game -> Game: setTimeout(800ms, onComplete)
+deactivate IM
+
+Game -> App: onLevelComplete(level, progress)
+App -> DB: saveProgress(progress)
+DB --> App: saved
+App -> Game: exit()
+App -> Result: enter({ level, progress })
+activate Result
+deactivate Game
+
+== Result Screen ==
+Result -> Result: animate stars (0.3s each)
+Player -> IM: tap "Next Level"
+activate IM
+IM -> App: onDown(x, y)
+App -> Result: handlePointerDown(x, y)
+Result -> App: onNextLevel(levelId + 1)
+deactivate IM
+App -> Result: exit()
+deactivate Result
+App -> DB: loadProgress(nextLevelId)
+App -> Game: enter({ nextLevel, progress })
+
+== Back to Menu with Progress ==
+Player -> IM: tap back button
+activate IM
+IM -> App: onDown(x, y)
+App -> Game: handlePointerDown(x, y)
+activate Game
+Game -> Game: showConfirmDialog = true (ConfirmBack)
+Player -> IM: tap confirm
+IM -> App: onDown(x, y)
+App -> Game: handlePointerDown(x, y)
+Game -> Logic: serializeGrid(grid)
+Logic --> Game: number[][]
+Game -> DB: saveProgress(partial progress)
+DB --> Game: saved
+Game -> App: onBack()
+deactivate Game
+deactivate IM
+App -> Game: exit()
+App -> Menu: enter({ levels, progressMap })
+
+@enduml
