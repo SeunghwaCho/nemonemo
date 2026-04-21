@@ -8,7 +8,8 @@
     "skipLibCheck": true,
     "outDir": "dist",
     "rootDir": "src",
-    "lib": ["ES2017", "DOM"]
+    "lib": ["ES2017", "DOM"],
+    "resolveJsonModule": true
   },
   "include": ["src/**/*", "tests/**/*"],
   "exclude": ["node_modules", "dist", "release"]

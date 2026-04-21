@@ -9,8 +9,8 @@
     "dev": "node scripts/generateLevels.js && ./node_modules/.bin/esbuild src/main.ts --bundle --outfile=dist/dist.js --watch"
   },
   "devDependencies": {
-    "typescript": "^5.3.3",
-    "esbuild": "^0.20.0",
-    "ts-node": "^10.9.2"
+    "esbuild": "^0.20.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   }
 }

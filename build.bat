@@ -13,7 +13,7 @@ if not exist node_modules (
     )
 )
 
-REM 레벨 데이터 생성
+REM 레벨 데이터 생성 (번들에 포함될 data/levels.json 생성)
 echo 레벨 데이터 생성 중...
 node scripts\generateLevels.js
 if errorlevel 1 (
@@ -22,7 +22,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM TypeScript 번들 빌드
+REM TypeScript 번들 빌드 (levels.json 포함)
 echo TypeScript 번들 빌드 중...
 .\node_modules\.bin\esbuild.cmd src\main.ts ^
   --bundle ^
@@ -38,28 +38,20 @@ if errorlevel 1 (
 
 echo 빌드 완료: dist\dist.js
 
-REM release 폴더 준비
+REM release 폴더 준비 (index.html + dist.js 만 필요)
 echo release 폴더 준비 중...
 if exist release rmdir /s /q release
 mkdir release
-mkdir release\data
 mkdir release\dist
-mkdir release\assets
 
-REM 필요한 파일 복사
 copy index.html release\index.html >nul
 copy dist\dist.js release\dist\dist.js >nul
-copy data\levels.json release\data\levels.json >nul
-
-REM assets 복사 (있으면)
-if exist assets\* (
-    xcopy assets\* release\assets\ /E /Q >nul 2>&1
-)
 
 echo.
 echo === 빌드 완료 ===
 echo 릴리즈 파일:
 dir release
+dir release\dist
 echo.
 echo 실행 방법:
 echo   cd release
