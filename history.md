@@ -1,5 +1,17 @@
 # 개발 이력
 
+## 2026-04-21 - 버그 수정: 결과 화면에서 목록으로 버튼 누르면 다음 판 시작되는 문제
+
+### 원인
+ResultScene의 버튼은 `handlePointerDown`(touchstart/mousedown)에서 처리된다.  
+"목록으로" 버튼을 누르면 `onMenu()` → `showMenu()` 호출로 즉시 `currentSceneName`이 `'menu'`로 변경된다.  
+이어서 touchend/mouseup 이벤트가 발생하면 씬이 이미 `'menu'`로 바뀌어 있어 `menuScene.handlePointerUp(x, y)`가 호출되고,  
+해당 좌표가 메뉴의 레벨 카드 위치와 겹치면 그 레벨이 시작되는 이벤트 누설(event leak) 버그였다.
+
+### 수정 내용
+- `App.ts`: `downSceneName` 필드 추가 — `onDown` 시점의 씬 이름을 기억
+- `onUp` 핸들러에서 `currentSceneName !== downSceneName`이면 이벤트를 무시해 누설 방지
+
 ## 2026-04-16 - 최초 구현
 
 ### 작업 내용

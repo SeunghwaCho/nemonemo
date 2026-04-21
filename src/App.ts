@@ -27,6 +27,7 @@ export class App {
   private resultScene: ResultScene;
 
   private currentSceneName: SceneName = 'menu';
+  private downSceneName: SceneName | null = null;
   private lastFrameTime = 0;
 
   private progressMap: Map<number, LevelProgress> = new Map();
@@ -84,6 +85,7 @@ export class App {
 
   private setupInput(): void {
     this.inputManager.setOnDown((x, y, secondary) => {
+      this.downSceneName = this.currentSceneName;
       const scene = this.currentSceneName;
       if (scene === 'menu') {
         this.menuScene.handlePointerDown(x, y);
@@ -105,6 +107,8 @@ export class App {
 
     this.inputManager.setOnUp((x, y) => {
       const scene = this.currentSceneName;
+      // down 시점과 씬이 달라졌으면 이벤트 누설 방지
+      if (scene !== this.downSceneName) return;
       if (scene === 'menu') {
         this.menuScene.handlePointerUp(x, y);
       } else if (scene === 'game') {
