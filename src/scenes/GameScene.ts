@@ -69,6 +69,12 @@ export class GameScene extends Scene {
 
   private backBtnRect = { x: 0, y: 0, w: 0, h: 0 };
   private restartBtnRect = { x: 0, y: 0, w: 0, h: 0 };
+  private pauseBtnRect = { x: 0, y: 0, w: 0, h: 0 };
+
+  private isPaused = false;
+  private pauseResumeRect = { x: 0, y: 0, w: 0, h: 0 };
+  private pauseMenuRect = { x: 0, y: 0, w: 0, h: 0 };
+  private pauseRestartRect = { x: 0, y: 0, w: 0, h: 0 };
 
   private headerH = 60;
 
@@ -91,6 +97,7 @@ export class GameScene extends Scene {
     this.timerActive = false;
     this.startTime = 0;
     this.isComplete = false;
+    this.isPaused = false;
     this.showConfirmDialog = false;
     this.dragAction = null;
     this.lastDragCell = null;
@@ -180,7 +187,7 @@ export class GameScene extends Scene {
     this.isPointerDown = true;
     this.isDragging = false;
 
-    if (this.showConfirmDialog || this.isComplete) return;
+    if (this.showConfirmDialog || this.isComplete || this.isPaused) return;
 
     const cell = this.getCellFromPos(x, y);
     if (!cell) return;
@@ -226,7 +233,7 @@ export class GameScene extends Scene {
   }
 
   handlePointerMove(x: number, y: number): void {
-    if (!this.isPointerDown || this.isComplete || this.showConfirmDialog) return;
+    if (!this.isPointerDown || this.isComplete || this.showConfirmDialog || this.isPaused) return;
     if (this.dragAction === null) return;
 
     this.isDragging = true;
@@ -272,6 +279,25 @@ export class GameScene extends Scene {
     this.dragAction = null;
     this.lastDragCell = null;
 
+    // 일시정지 오버레이 버튼 처리
+    if (this.isPaused) {
+      if (this.hitRect(x, y, this.pauseResumeRect)) {
+        this.resume();
+      } else if (this.hitRect(x, y, this.pauseMenuRect)) {
+        this.isPaused = false;
+        this.onBack();
+      } else if (this.hitRect(x, y, this.pauseRestartRect)) {
+        this.isPaused = false;
+        this.grid = createGrid(this.level.width, this.level.height);
+        this.elapsed = 0;
+        this.timerActive = false;
+        this.startTime = 0;
+        this.isComplete = false;
+        this.updateCompleted();
+      }
+      return;
+    }
+
     // 다이얼로그 버튼 처리 (탭 확인)
     if (this.showConfirmDialog) {
       this.handleDialogClick(x, y);
@@ -280,6 +306,10 @@ export class GameScene extends Scene {
 
     // 헤더 버튼 처리 (드래그가 아닌 탭일 때만)
     if (!wasDragging) {
+      if (this.hitRect(x, y, this.pauseBtnRect)) {
+        this.togglePause();
+        return;
+      }
       if (this.hitRect(x, y, this.backBtnRect)) {
         this.confirmDialogType = 'back';
         this.showConfirmDialog = true;
@@ -290,6 +320,30 @@ export class GameScene extends Scene {
         this.showConfirmDialog = true;
         return;
       }
+    }
+  }
+
+  private togglePause(): void {
+    if (this.isPaused) {
+      this.resume();
+    } else {
+      this.pause();
+    }
+  }
+
+  private pause(): void {
+    this.isPaused = true;
+    if (this.timerActive) {
+      this.elapsed = (Date.now() - this.startTime) / 1000;
+      this.timerActive = false;
+    }
+  }
+
+  private resume(): void {
+    this.isPaused = false;
+    if (!this.isComplete && this.elapsed > 0) {
+      this.startTime = Date.now() - this.elapsed * 1000;
+      this.timerActive = true;
     }
   }
 
@@ -333,7 +387,7 @@ export class GameScene extends Scene {
   }
 
   update(dt: number): void {
-    if (this.timerActive && !this.isComplete) {
+    if (this.timerActive && !this.isComplete && !this.isPaused) {
       this.elapsed = (Date.now() - this.startTime) / 1000;
     }
 
@@ -364,6 +418,11 @@ export class GameScene extends Scene {
     // 확인 다이얼로그
     if (this.showConfirmDialog) {
       this.renderConfirmDialog();
+    }
+
+    // 일시정지 오버레이
+    if (this.isPaused) {
+      this.renderPauseOverlay();
     }
   }
 
@@ -411,6 +470,23 @@ export class GameScene extends Scene {
     ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('🔄 다시', this.restartBtnRect.x + rbtnW / 2, H / 2);
+
+    // 일시정지 버튼 (다시하기 왼쪽)
+    const pbtnW = 44;
+    const pbtnGap = 6;
+    this.pauseBtnRect = {
+      x: this.restartBtnRect.x - pbtnGap - pbtnW,
+      y: (H - btnH) / 2,
+      w: pbtnW,
+      h: btnH,
+    };
+    ctx.fillStyle = '#8e44ad';
+    this.roundRect(ctx, this.pauseBtnRect.x, this.pauseBtnRect.y, pbtnW, btnH, 8);
+    ctx.fill();
+    ctx.fillStyle = COLORS.buttonText;
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⏸', this.pauseBtnRect.x + pbtnW / 2, H / 2);
   }
 
   private renderGrid(): void {
@@ -532,6 +608,68 @@ export class GameScene extends Scene {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('🎉', W / 2, H / 2);
+  }
+
+  private renderPauseOverlay(): void {
+    const ctx = this.ctx;
+    const W = this.width;
+    const H = this.height;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, 0, W, H);
+
+    const dw = Math.min(300, W * 0.85);
+    const dh = 220;
+    const dx = (W - dw) / 2;
+    const dy = (H - dh) / 2;
+
+    ctx.fillStyle = COLORS.dialogCard;
+    this.roundRect(ctx, dx, dy, dw, dh, 16);
+    ctx.fill();
+    ctx.strokeStyle = '#8e44ad';
+    ctx.lineWidth = 2;
+    this.roundRect(ctx, dx, dy, dw, dh, 16);
+    ctx.stroke();
+
+    ctx.fillStyle = COLORS.clueText;
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⏸ 일시정지', W / 2, dy + 44);
+
+    const btnW = dw - 40;
+    const btnH = 42;
+    const btnX = dx + 20;
+    const gap = 10;
+
+    // 이어하기 버튼
+    const resumeY = dy + 82;
+    this.pauseResumeRect = { x: btnX, y: resumeY, w: btnW, h: btnH };
+    ctx.fillStyle = '#27ae60';
+    this.roundRect(ctx, btnX, resumeY, btnW, btnH, 10);
+    ctx.fill();
+    ctx.fillStyle = COLORS.buttonText;
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('▶ 이어하기', btnX + btnW / 2, resumeY + btnH / 2);
+
+    // 다시하기 버튼
+    const restartY = resumeY + btnH + gap;
+    this.pauseRestartRect = { x: btnX, y: restartY, w: btnW / 2 - gap / 2, h: btnH };
+    ctx.fillStyle = '#2980b9';
+    this.roundRect(ctx, btnX, restartY, btnW / 2 - gap / 2, btnH, 10);
+    ctx.fill();
+    ctx.fillStyle = COLORS.buttonText;
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText('🔄 다시하기', btnX + (btnW / 2 - gap / 2) / 2, restartY + btnH / 2);
+
+    // 목록으로 버튼
+    const menuBtnX = btnX + btnW / 2 + gap / 2;
+    this.pauseMenuRect = { x: menuBtnX, y: restartY, w: btnW / 2 - gap / 2, h: btnH };
+    ctx.fillStyle = COLORS.button;
+    this.roundRect(ctx, menuBtnX, restartY, btnW / 2 - gap / 2, btnH, 10);
+    ctx.fill();
+    ctx.fillStyle = COLORS.buttonText;
+    ctx.fillText('📋 목록으로', menuBtnX + (btnW / 2 - gap / 2) / 2, restartY + btnH / 2);
   }
 
   private renderConfirmDialog(): void {
