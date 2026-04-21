@@ -76,6 +76,9 @@ export class GameScene extends Scene {
   private pauseMenuRect = { x: 0, y: 0, w: 0, h: 0 };
   private pauseRestartRect = { x: 0, y: 0, w: 0, h: 0 };
 
+  private autoSaveTimer = 0;
+  private readonly AUTO_SAVE_INTERVAL = 30;
+
   private headerH = 60;
 
   enter(data?: unknown): void {
@@ -98,6 +101,7 @@ export class GameScene extends Scene {
     this.startTime = 0;
     this.isComplete = false;
     this.isPaused = false;
+    this.autoSaveTimer = 0;
     this.showConfirmDialog = false;
     this.dragAction = null;
     this.lastDragCell = null;
@@ -389,6 +393,12 @@ export class GameScene extends Scene {
   update(dt: number): void {
     if (this.timerActive && !this.isComplete && !this.isPaused) {
       this.elapsed = (Date.now() - this.startTime) / 1000;
+
+      this.autoSaveTimer += dt;
+      if (this.autoSaveTimer >= this.AUTO_SAVE_INTERVAL) {
+        this.autoSaveTimer = 0;
+        this.saveCurrentProgress();
+      }
     }
 
     // 창 크기 변경 감지
