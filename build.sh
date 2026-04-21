@@ -5,8 +5,8 @@ set -e
 
 echo "=== 네모네모 로직 빌드 시작 ==="
 
-# 의존성 확인
-if [ ! -d "node_modules" ]; then
+# 의존성 확인 (node_modules 없거나 esbuild 실행 불가 시 재설치)
+if [ ! -d "node_modules" ] || ! ./node_modules/.bin/esbuild --version > /dev/null 2>&1; then
   echo "npm 패키지 설치 중..."
   npm install
 fi

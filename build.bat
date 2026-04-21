@@ -2,8 +2,14 @@
 chcp 949 >nul
 echo === 네모네모 로직 빌드 시작 ===
 
-REM 의존성 확인
-if not exist node_modules (
+REM 의존성 확인 (node_modules 없거나 esbuild 실행 불가 시 재설치)
+set NEED_INSTALL=0
+if not exist node_modules set NEED_INSTALL=1
+if %NEED_INSTALL%==0 (
+    .\node_modules\.bin\esbuild.cmd --version > nul 2>&1
+    if errorlevel 1 set NEED_INSTALL=1
+)
+if %NEED_INSTALL%==1 (
     echo npm 패키지 설치 중...
     npm install
     if errorlevel 1 (
